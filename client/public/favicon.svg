@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="45" fill="url(#grad)"/>
+  <!-- Book icon representing learning -->
+  <path d="M 30 35 L 30 70 Q 30 72 32 72 L 68 72 Q 70 72 70 70 L 70 35 Q 70 33 68 33 L 32 33 Q 30 33 30 35 Z" fill="white"/>
+  <line x1="50" y1="33" x2="50" y2="72" stroke="url(#grad)" stroke-width="2"/>
+  <path d="M 35 42 L 45 42" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 35 50 L 45 50" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 55 42 L 65 42" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M 55 50 L 65 50" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
-client/node_modules/
-server/node_modules/
+/.pnp
+.pnp.js
 
 # Environment variables
 .env
@@ -9,11 +9,6 @@ server/node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
-client/.env
-server/.env
-
-# Firebase sensitive config
-client/public/firebase-config.js
 
 # Logs
 logs
@@ -24,11 +19,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Production builds
-/dist
+# Testing
+/coverage
+
+# Production
 /build
-client/dist
-server/dist
+/dist
 
 # Database
 *.sqlite
@@ -36,10 +32,7 @@ server/dist
 *.db
 
 # Uploads (user-generated content)
-server/uploads/
-
-# Testing
-/coverage
+uploads/
 
 # Editor directories and files
 .vscode/*
@@ -59,3 +52,8 @@ server/uploads/
 
 # OS files
 Thumbs.db
+.DS_Store
+
+# Upload directories (if any)
+/uploads
+/public/uploads
