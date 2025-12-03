@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Browser Notifications</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔔 Test Browser Notifications</h1>
+    <p>Use this page to test if browser notifications are working on your system.</p>
+
+    <div id="status"></div>
+
+    <button onclick="testSimpleNotification()">Test Simple Notification</button>
+    <button onclick="testWithIcon()">Test With Icon</button>
+    <button onclick="testMultiple()">Test Multiple (3)</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const status = document.getElementById('status');
+
+    function log(message) {
+      output.textContent += message + '\n';
+      console.log(message);
+    }
+
+    function clearOutput() {
+      output.textContent = '';
+    }
+
+    function updateStatus() {
+      if (!('Notification' in window)) {
+        status.innerHTML = '<div class="status error">❌ This browser does NOT support notifications</div>';
+        return;
+      }
+
+      const permission = Notification.permission;
+
+      if (permission === 'granted') {
+        status.innerHTML = '<div class="status success">✅ Notifications are ENABLED</div>';
+      } else if (permission === 'denied') {
+        status.innerHTML = '<div class="status error">🔕 Notifications are BLOCKED<br>Click the lock icon in address bar to enable</div>';
+      } else {
+        status.innerHTML = '<div class="status warning">⚠️ Notification permission not yet requested</div>';
+      }
+    }
+
+    async function requestPermissionIfNeeded() {
+      if (!('Notification' in window)) {
+        log('❌ This browser does not support notifications');
+        return false;
+      }
+
+      if (Notification.permission === 'granted') {
+        return true;
+      }
+
+      if (Notification.permission === 'denied') {
+        log('🔕 Notifications are blocked. Please enable them in browser settings.');
+        return false;
+      }
+
+      log('📋 Requesting notification permission...');
+      const permission = await Notification.requestPermission();
+      log(`Permission result: ${permission}`);
+      updateStatus();
+
+      return permission === 'granted';
+    }
+
+    async function testSimpleNotification() {
+      clearOutput();
+      log('🧪 Testing simple notification...\n');
+
+      const hasPermission = await requestPermissionIfNeeded();
+      if (!hasPermission) return;
+
+      try {
+        log('Creating notification...');
+        const notification = new Notification('Test Notification', {
+          body: 'This is a test notification. If you see this, notifications are working!',
+        });
+
+        log('✅ Notification created!');
+        log('If you don\'t see a popup, check:');
+        log('1. Browser notification settings');
+        log('2. System notification settings (Windows/Mac)');
+        log('3. Focus Assist / Do Not Disturb mode');
+
+        notification.onclick = () => {
+          log('🖱️ Notification was clicked!');
+          notification.close();
+        };
+
+        notification.onclose = () => {
+          log('🔕 Notification closed');
+        };
+
+        notification.onerror = (error) => {
+          log('❌ Notification error: ' + error);
+        };
+
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
+
+      } catch (error) {
+        log('❌ Error: ' + error.message);
+      }
+    }
+
+    async function testWithIcon() {
+      clearOutput();
+      log('🧪 Testing notification with icon...\n');
+
+      const hasPermission = await requestPermissionIfNeeded();
+      if (!hasPermission) return;
+
+      try {
+        const notification = new Notification('Notification with Icon', {
+          body: 'This notification has an icon and more options',
+          icon: '/firebase-logo.png',
+          badge: '/firebase-logo.png',
+          tag: 'test-with-icon',
+          requireInteraction: false,
+        });
+
+        log('✅ Notification with icon created!');
+
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
+
+      } catch (error) {
+        log('❌ Error: ' + error.message);
+      }
+    }
+
+    async function testMultiple() {
+      clearOutput();
+      log('🧪 Testing multiple notifications...\n');
+
+      const hasPermission = await requestPermissionIfNeeded();
+      if (!hasPermission) return;
+
+      try {
+        for (let i = 1; i <= 3; i++) {
+          setTimeout(() => {
+            const notification = new Notification(`Notification ${i}`, {
+              body: `This is notification number ${i}`,
+              tag: `test-${i}`, // Each notification has unique tag
+            });
+
+            log(`✅ Notification ${i} created`);
+
+            setTimeout(() => {
+              notification.close();
+            }, 5000);
+          }, i * 1000); // Space them out by 1 second
+        }
+
+        log('Creating 3 notifications with 1 second delay between each...');
+      } catch (error) {
+        log('❌ Error: ' + error.message);
+      }
+    }
+
+    // Check status on load
+    updateStatus();
+
+    // Show current notification permission
+    log('Current notification permission: ' + (Notification?.permission || 'N/A'));
+    log('\nClick a button above to test notifications.');
+  </script>
+</body>
+</html>
