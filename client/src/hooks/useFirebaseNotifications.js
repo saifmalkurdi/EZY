@@ -84,12 +84,19 @@ export const useFirebaseNotifications = () => {
 
         if (token) {
           setFcmToken(token);
-          console.log("✅ Notifications enabled successfully!");
 
           try {
             await axiosInstance.put("/auth/fcm-token", { fcmToken: token });
           } catch (error) {
             console.error("Error saving FCM token to server:", error);
+            // Reset flag to allow retry on next authentication or page reload
+            hasRequestedPermission.current = false;
+
+            // If it's an auth error, the token will be retried when user logs in again
+            // or when the interceptor refreshes the token
+            if (error.response?.status === 401 || error.response?.status === 403) {
+              console.warn("⚠️ Authentication required. FCM token will be updated after login.");
+            }
           }
 
           return token;
@@ -102,6 +109,49 @@ export const useFirebaseNotifications = () => {
       hasRequestedPermission.current = false; // Reset so it can retry
     }
   }, [isAuthenticated]);
+
+  // Helper function to show regular browser notification
+  const showRegularNotification = (payload, notificationData) => {
+    try {
+      const notificationTitle = payload.notification?.title || "New Notification";
+      const notificationBody = payload.notification?.body || "";
+
+      const notification = new Notification(notificationTitle, {
+        body: notificationBody,
+        icon: "/firebase-logo.png",
+        badge: "/firebase-logo.png",
+        tag: notificationData.type || "notification",
+        requireInteraction: true,
+        silent: false,
+      });
+
+      // Auto-close notification after 10 seconds
+      const autoCloseTimer = setTimeout(() => {
+        notification.close();
+      }, 10000);
+
+      // Handle notification click
+      notification.onclick = function (event) {
+        clearTimeout(autoCloseTimer);
+        event.preventDefault();
+        window.focus();
+        notification.close();
+      };
+
+      // Handle notification close
+      notification.onclose = function () {
+        clearTimeout(autoCloseTimer);
+      };
+
+      // Handle notification error
+      notification.onerror = function (error) {
+        console.error("Notification error:", error);
+        clearTimeout(autoCloseTimer);
+      };
+    } catch (error) {
+      console.error("Error showing notification:", error);
+    }
+  };
 
   // Listen for foreground messages
   useEffect(() => {
@@ -153,34 +203,16 @@ export const useFirebaseNotifications = () => {
       }
 
       // Show browser notification for foreground messages
+      // Use direct Notification API when app is in foreground (more reliable)
       if ("Notification" in window && Notification.permission === "granted") {
         try {
-          const notification = new Notification(
-            payload.notification?.title || "New Notification",
-            {
-              body: payload.notification?.body || "",
-              icon: "/firebase-logo.png",
-              badge: "/firebase-logo.png",
-              tag: notificationData.type, // Prevent duplicate browser notifications
-              requireInteraction: false,
-              silent: false,
-            }
-          );
-
-          // Auto-close notification after 5 seconds
-          setTimeout(() => {
-            notification.close();
-          }, 5000);
-
-          // Handle notification click
-          notification.onclick = function (event) {
-            event.preventDefault();
-            window.focus();
-            notification.close();
-          };
+          showRegularNotification(payload, notificationData);
         } catch (error) {
           console.error("Error showing browser notification:", error);
         }
+      } else {
+        console.warn("Browser notifications not available or permission not granted");
+        console.warn("Current permission:", Notification?.permission);
       }
 
       // Fetch from server to sync with database (get real ID and ensure persistence)
@@ -205,6 +237,10 @@ export const useFirebaseNotifications = () => {
   // Initialize on mount and when authentication changes
   useEffect(() => {
     if (isAuthenticated) {
+      // Reset the permission flag when authentication state changes
+      // This allows retry if FCM token update failed previously
+      hasRequestedPermission.current = false;
+
       requestPermission();
       fetchNotifications();
     } else {
@@ -214,6 +250,7 @@ export const useFirebaseNotifications = () => {
       setFcmToken(null);
       hasRequestedPermission.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // Periodic polling for new notifications (catches offline notifications)

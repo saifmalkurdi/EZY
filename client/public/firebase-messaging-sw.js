@@ -17,13 +17,8 @@ if (self.firebaseConfig) {
 
   const messaging = firebase.messaging();
 
-  // Handle background messages
+  // Handle background messages (when app is not in focus)
   messaging.onBackgroundMessage((payload) => {
-    console.log(
-      "[firebase-messaging-sw.js] Received background message",
-      payload
-    );
-
     const notificationTitle = payload.notification?.title || "New Notification";
     const notificationOptions = {
       body: payload.notification?.body || "",

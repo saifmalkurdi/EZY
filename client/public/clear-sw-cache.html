@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear Service Worker Cache</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .danger {
+      background: #f44336;
+    }
+    .danger:hover {
+      background: #da190b;
+    }
+    .info {
+      background: #2196F3;
+    }
+    .info:hover {
+      background: #0b7dda;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Service Worker Debug Tools</h1>
+    <p>Use these tools to fix notification issues:</p>
+
+    <button onclick="checkStatus()" class="info">Check Status</button>
+    <button onclick="updateServiceWorker()">Update Service Worker</button>
+    <button onclick="clearCacheAndUpdate()" class="danger">Clear All & Update</button>
+    <button onclick="checkNotificationPermission()">Check Permissions</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+
+    function log(message) {
+      output.textContent += message + '\n';
+      console.log(message);
+    }
+
+    function clearOutput() {
+      output.textContent = '';
+    }
+
+    async function checkStatus() {
+      clearOutput();
+      log('🔍 Checking Service Worker status...\n');
+
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        log(`Found ${registrations.length} service worker(s)\n`);
+
+        registrations.forEach((reg, i) => {
+          log(`Service Worker ${i + 1}:`);
+          log(`  Scope: ${reg.scope}`);
+          log(`  Active: ${reg.active ? 'Yes' : 'No'}`);
+          log(`  Installing: ${reg.installing ? 'Yes' : 'No'}`);
+          log(`  Waiting: ${reg.waiting ? 'Yes' : 'No'}\n`);
+        });
+
+        // Check notification permission
+        log(`Notification Permission: ${Notification.permission}`);
+      } else {
+        log('❌ Service Workers not supported');
+      }
+    }
+
+    async function updateServiceWorker() {
+      clearOutput();
+      log('🔄 Updating Service Worker...\n');
+
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.update();
+          log('✅ Service Worker update triggered');
+          log('💡 Refresh the page to activate the new version');
+        } else {
+          log('❌ No Service Worker registered');
+          log('💡 Go back to the main app to register it');
+        }
+      } catch (error) {
+        log('❌ Error updating Service Worker:');
+        log(error.message);
+      }
+    }
+
+    async function clearCacheAndUpdate() {
+      clearOutput();
+      log('🗑️ Clearing all caches and Service Workers...\n');
+
+      try {
+        // Unregister all service workers
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+          log('✅ Unregistered Service Worker: ' + registration.scope);
+        }
+
+        // Clear all caches
+        const cacheNames = await caches.keys();
+        for (const cacheName of cacheNames) {
+          await caches.delete(cacheName);
+          log('✅ Deleted cache: ' + cacheName);
+        }
+
+        log('\n✅ All Service Workers and caches cleared!');
+        log('💡 Go back to the main app and refresh to re-register');
+
+        // Wait 2 seconds then redirect
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } catch (error) {
+        log('❌ Error:');
+        log(error.message);
+      }
+    }
+
+    async function checkNotificationPermission() {
+      clearOutput();
+      log('🔔 Checking Notification Permissions...\n');
+
+      if ('Notification' in window) {
+        log(`Permission: ${Notification.permission}\n`);
+
+        if (Notification.permission === 'granted') {
+          log('✅ Notifications are enabled!');
+
+          // Test notification
+          try {
+            const notification = new Notification('Test Notification', {
+              body: 'If you see this, browser notifications are working!',
+              icon: '/firebase-logo.png'
+            });
+
+            setTimeout(() => notification.close(), 5000);
+            log('✅ Test notification sent!');
+          } catch (error) {
+            log('❌ Error showing notification:');
+            log(error.message);
+          }
+        } else if (Notification.permission === 'denied') {
+          log('🔕 Notifications are BLOCKED');
+          log('\nTo enable:');
+          log('1. Click the 🔒 or ⓘ icon in the address bar');
+          log('2. Find "Notifications" setting');
+          log('3. Change to "Allow"');
+          log('4. Refresh the page');
+        } else {
+          log('⚠️ Notification permission not yet requested');
+          log('\nRequest permission?');
+
+          const permission = await Notification.requestPermission();
+          log(`\nNew permission: ${permission}`);
+        }
+      } else {
+        log('❌ Notifications not supported in this browser');
+      }
+    }
+  </script>
+</body>
+</html>
